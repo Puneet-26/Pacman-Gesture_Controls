@@ -91,16 +91,21 @@ sudo usermod -aG video $USER
 
 ---
 
-## 5. Install Python Dependencies (PIP)
+## 5. Python 3.6 ARM64 Dependencies (PIP)
 
-Install the Python packages using `requirements-jetson.txt`:
+Install the verified Python 3.6 packages from `requirements-jetson.txt`:
 ```bash
 pip3 install -r requirements-jetson.txt
 ```
 
-This installs:
-- `numpy==1.19.5` (the highest version supporting Python 3.6 on ARM64; does not use numpy 1.26.x)
-- `pygame==2.0.3` (or uses system `python3-pygame`)
+### ARM64 PyPI Wheel Verification
+Both candidate versions were verified against the official PyPI JSON index for direct `cp36-cp36m` and `aarch64` binary wheel availability:
+- **`numpy==1.19.5`**: PyPI provides `numpy-1.19.5-cp36-cp36m-manylinux2014_aarch64.whl`.
+  - Installs instantly as a precompiled binary wheel without needing C/Fortran compilers.
+  - Does **not** install NumPy 1.26.x (which requires Python $\ge 3.9$).
+- **`pygame==2.0.3`**: PyPI provides `pygame-2.0.3-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl`.
+  - Pygame 2.0.3 was the first release with official aarch64 binary wheels for Python 3.6.
+  - Older releases (such as 1.9.6) had no pre-built aarch64 wheels on PyPI and required compiling from source or using Ubuntu's `python3-pygame` APT package.
 
 ---
 
@@ -139,7 +144,7 @@ If building from source on Jetson Nano:
 
 ## 7. TensorRT Setup & Model Requirements (Optional Backend)
 
-The project includes modular TensorRT support (`vision.hand_detector.TensorRTHandDetector`).
+The project includes modular TensorRT support in [`vision/hand_detector.py`](file:///G:/PacMan-Gesture_Controls/vision/hand_detector.py) via `TensorRTHandDetector`.
 
 ### 7.1 Important Rule on TensorRT Engines
 > **WARNING:** TensorRT serialized engine files (`.engine` or `.plan`) **cannot** be cross-compiled or transferred between different machine architectures. An engine built on a desktop GeForce GPU (sm_86 or sm_89) will fail to deserialize on the Jetson Nano (Maxwell sm_53).

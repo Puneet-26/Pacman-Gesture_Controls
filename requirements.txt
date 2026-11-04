@@ -1,15 +1,10 @@
-# PAC-MAN VISION - General Requirements
-# Compatible with both modern laptops and Python 3.6 environments.
-# Note for Jetson Nano: Follow docs/JETSON_SETUP.md and use requirements-jetson.txt.
+# PAC-MAN VISION - Primary Deployment Requirements (NVIDIA Jetson Nano)
+# Target Environment: Python 3.6 on aarch64 (JetPack 4.6.x)
+# For modern laptop development (Python 3.8+), see requirements-laptop.txt.
 
-# Pygame
-pygame==2.0.3; python_version < '3.8'
-pygame>=2.5.0; python_version >= '3.8'
+# Pinned to Python 3.6 aarch64 verified binary wheels on PyPI:
+numpy==1.19.5; python_version == '3.6'
+pygame==2.0.3; python_version == '3.6'
 
-# NumPy (pinned to 1.19.5 for Python 3.6 compatibility)
-numpy==1.19.5; python_version < '3.8'
-numpy>=1.24.0; python_version >= '3.8'
-
-# OpenCV & MediaPipe for modern laptops
-opencv-python>=4.8.0; python_version >= '3.8'
-mediapipe>=0.10.0; python_version >= '3.8'
+# Note: OpenCV is provided by system apt (python3-opencv) on Jetson Nano.
+# Do NOT install opencv-python via pip on the Jetson.
