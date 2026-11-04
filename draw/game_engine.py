@@ -10,6 +10,7 @@ from model.entity.ghost.inky import Inky
 from model.entity.ghost.pinky import Pinky
 from model.level_config import LevelConfig
 import math
+from typing import List
 
 from model.entity.player.player import Player
 from settings import *
@@ -23,7 +24,7 @@ GHOST_EATEN_EVENT = pygame.USEREVENT + 1
 
 class GameEngine:
 
-    def __init__(self, screen: Surface, level: LevelConfig, player: Player, ghosts: list[Ghost]):
+    def __init__(self, screen: Surface, level: LevelConfig, player: Player, ghosts: List[Ghost]):
         self.screen = screen
         self.level = level
         self.board_definition = level.board_definition

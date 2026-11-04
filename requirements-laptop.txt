@@ -1,0 +1,8 @@
+# PAC-MAN VISION - Modern Laptop Development Environment Requirements
+# Platform: Windows / macOS / Linux x86_64
+# Minimum Python Version: Python 3.8+ (Supports Python 3.8 - 3.12+)
+
+pygame>=2.5.0; python_version >= '3.8'
+numpy>=1.24.0; python_version >= '3.8'
+opencv-python>=4.8.0; python_version >= '3.8'
+mediapipe>=0.10.0; python_version >= '3.8'
