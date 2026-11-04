@@ -321,3 +321,4 @@ class GestureController:
         help_text = "Point Index: UP/DOWN/LEFT/RIGHT | Fist: PAUSE | Palm: RESUME"
         cv2.putText(frame, help_text, (15, h - 12),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, (220, 220, 220), 1, cv2.LINE_AA)
+

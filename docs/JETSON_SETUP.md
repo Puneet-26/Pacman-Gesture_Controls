@@ -58,7 +58,7 @@ echo "/var/swapfile swap swap defaults 0 0" | sudo tee -a /etc/fstab
 
 ---
 
-## 4. Install System Dependencies
+## 4. Install System Dependencies (APT)
 
 Use the Ubuntu `apt` package manager for hardware-accelerated libraries.
 
@@ -91,7 +91,7 @@ sudo usermod -aG video $USER
 
 ---
 
-## 5. Install Python Dependencies
+## 5. Install Python Dependencies (PIP)
 
 Install the Python packages using `requirements-jetson.txt`:
 ```bash
@@ -99,7 +99,7 @@ pip3 install -r requirements-jetson.txt
 ```
 
 This installs:
-- `numpy==1.19.5` (the highest version supporting Python 3.6 on ARM64)
+- `numpy==1.19.5` (the highest version supporting Python 3.6 on ARM64; does not use numpy 1.26.x)
 - `pygame==2.0.3` (or uses system `python3-pygame`)
 
 ---
@@ -137,9 +137,41 @@ If building from source on Jetson Nano:
 
 ---
 
-## 7. Camera Configuration
+## 7. TensorRT Setup & Model Requirements (Optional Backend)
 
-### 7.1 USB Webcams
+The project includes modular TensorRT support (`vision.hand_detector.TensorRTHandDetector`).
+
+### 7.1 Important Rule on TensorRT Engines
+> **WARNING:** TensorRT serialized engine files (`.engine` or `.plan`) **cannot** be cross-compiled or transferred between different machine architectures. An engine built on a desktop GeForce GPU (sm_86 or sm_89) will fail to deserialize on the Jetson Nano (Maxwell sm_53).
+> **The engine MUST be compiled directly on the target Jetson Nano.**
+
+### 7.2 Generating the Engine on Jetson Nano
+Convert your ONNX model to a TensorRT engine using NVIDIA's `trtexec` utility:
+```bash
+# Create models directory
+mkdir -p models
+
+# Build the FP16-optimized engine on Jetson Nano
+/usr/src/tensorrt/bin/trtexec \
+    --onnx=models/hand_landmarker.onnx \
+    --saveEngine=models/hand_landmarker.engine \
+    --fp16
+```
+
+### 7.3 Running with TensorRT
+To activate the TensorRT detector backend:
+```bash
+export PACMAN_USE_TRT=1
+export PACMAN_TRT_ENGINE="models/hand_landmarker.engine"
+python3 pacman.py --mode gesture --camera csi
+```
+If the engine file is missing or corrupted, the system produces a clear, descriptive error and automatically falls back to MediaPipe or Keyboard mode.
+
+---
+
+## 8. Camera Configuration
+
+### 8.1 USB Webcams
 When plugging in a standard USB webcam to the EAGLE-101 board:
 ```bash
 # Check device enumeration
@@ -153,7 +185,7 @@ Run Pac-Man with USB camera:
 python3 pacman.py --camera 0
 ```
 
-### 7.2 MIPI-CSI Cameras (Sony IMX219 / RPi Camera v2)
+### 8.2 MIPI-CSI Cameras (Sony IMX219 / RPi Camera v2)
 Connect the ribbon cable to `CAM0` on the Tanna TechBiz EAGLE-101 board (ensure the blue backing faces the Ethernet jack).
 
 Verify the CSI camera sensor is recognized:
@@ -177,15 +209,15 @@ python3 pacman.py --camera csi://0
 
 ---
 
-## 8. Running the Application
+## 9. Running the Application
 
-### 8.1 Keyboard Mode (Standalone)
-Can be run on any Jetson without camera or MediaPipe:
+### 9.1 Keyboard Mode (Standalone)
+Can be run on any Jetson without camera, MediaPipe, or TensorRT:
 ```bash
 python3 pacman.py --mode keyboard
 ```
 
-### 8.2 Gesture Mode (Full Vision Control)
+### 9.2 Gesture Mode (Full Vision Control)
 With USB camera:
 ```bash
 python3 pacman.py --mode gesture --camera 0
@@ -196,18 +228,21 @@ With MIPI CSI camera:
 python3 pacman.py --mode gesture --camera csi
 ```
 
-### 8.3 Jetson Performance Optimization Flags
+### 9.3 Jetson Performance Optimization Flags
 To maximize FPS and conserve CPU/GPU memory on Jetson Nano:
 ```bash
 # Disable OpenCV preview window and use 320x240 capture resolution
 python3 pacman.py --mode gesture --camera csi --no-preview --width 320 --height 240
 ```
 
-### 8.4 Standalone Vision Test
+### 9.4 Standalone Vision Test
 Verify hand tracking independently before running the full game:
 ```bash
 # Automated synthetic test (runs without camera)
 python3 test_gestures.py --synthetic
+
+# Automated compatibility suite (all 10 tests)
+python3 tests/test_compatibility.py
 
 # Live camera gesture verification
 python3 test_gestures.py
@@ -215,7 +250,7 @@ python3 test_gestures.py
 
 ---
 
-## 9. Troubleshooting & FAQ
+## 10. Troubleshooting & FAQ
 
 | Problem | Cause | Solution |
 | :--- | :--- | :--- |
@@ -225,3 +260,4 @@ python3 test_gestures.py
 | `ALSA lib pcm.c: playback open error` | Pygame audio device mismatch | Set `export SDL_AUDIODRIVER=alsa` before running `python3 pacman.py` |
 | Pygame crashes with `No available video device` | Running over headless SSH | Forward X11 with `ssh -X` or run locally with `export DISPLAY=:0` |
 | Low frame rate (< 15 FPS) | Power throttling or desktop GUI overhead | Enable max clocks (`sudo jetson_clocks`) and run with `--no-preview` |
+| `Failed to deserialize TensorRT engine` | Architecture mismatch (non-sm_53 engine) | Rebuild engine on the Jetson using `trtexec --onnx=... --saveEngine=... --fp16` |

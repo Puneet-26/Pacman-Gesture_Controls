@@ -3,6 +3,16 @@ tests/test_compatibility.py
 Comprehensive automated test suite verifying Python 3.6 & Jetson Nano compatibility,
 modular vision subsystem, error handling, resource cleanup, and game engine integration.
 
+Verifies:
+  1. All project Python files are compatible with Python 3.6 (AST walk).
+  2. The project imports successfully without modern Python syntax.
+  3. Keyboard mode does not require TensorRT, MediaPipe or a webcam.
+  4. Gesture mode handles missing cameras gracefully.
+  5. TensorRT model loading handles missing or incompatible engine files with clear errors.
+  6. Gesture directions map correctly to the existing Pac-Man direction commands.
+  7. Camera and model resources are released properly.
+  8. Existing gameplay remains unchanged.
+
 Usage:
   python tests/test_compatibility.py
 """
@@ -29,7 +39,7 @@ from vision.gesture_recognizer import GestureType, GestureRecognizer, HAND_CONNE
 
 
 class TestPython36SyntaxAudit(unittest.TestCase):
-    """Test 7: Python 3.6 AST syntax audit across all project source files."""
+    """Test 1 & 2: Python 3.6 AST syntax audit across all project source files."""
 
     def test_all_python_files_are_python_36_compatible(self):
         """Walk all .py files and verify no Python 3.8+ or PEP 585 features exist."""
@@ -72,12 +82,11 @@ class TestPython36SyntaxAudit(unittest.TestCase):
 
 
 class TestMissingMediaPipeHandling(unittest.TestCase):
-    """Test 1: Game imports and starts without MediaPipe installed."""
+    """Test 3a: Game imports and degrades gracefully without MediaPipe or TensorRT installed."""
 
     def test_import_without_mediapipe(self):
         """Simulate system without mediapipe and verify safe import & degradation."""
         with patch('vision.gesture_controller.is_mediapipe_available', return_value=False):
-            # Importing gesture_controller should not raise an ImportError
             from gesture_controller import GestureController, GestureType
             self.assertEqual(GestureType.UP.value, "UP")
             self.assertEqual(GestureType.PAUSE.value, "PAUSE")
@@ -93,7 +102,7 @@ class TestMissingMediaPipeHandling(unittest.TestCase):
 
 
 class TestKeyboardModeOperation(unittest.TestCase):
-    """Test 2: Keyboard mode operates without opening camera."""
+    """Test 3b: Keyboard mode operates without opening camera, MediaPipe, or TensorRT."""
 
     def test_keyboard_mode_initialization(self):
         """Verify Keyboard mode initializes without opening camera devices."""
@@ -115,7 +124,7 @@ class TestKeyboardModeOperation(unittest.TestCase):
 
 
 class TestGestureToDirectionMapping(unittest.TestCase):
-    """Test 3: GestureType commands map 1:1 to game Direction enum."""
+    """Test 6: GestureType commands map 1:1 to game Direction enum."""
 
     def test_command_mapping(self):
         """Verify each GestureType correctly controls Pac-Man and game state."""
@@ -154,7 +163,7 @@ class TestGestureToDirectionMapping(unittest.TestCase):
 
 
 class TestHandDetectorOutputFormat(unittest.TestCase):
-    """Test 4: Hand detector output format validation (21 landmarks, normalized coords)."""
+    """Output contract validation (21 landmarks, normalized coords)."""
 
     def test_detector_output_contract(self):
         """Verify HandDetector contract returns 21 normalized (x, y, z) coordinates."""
@@ -182,7 +191,7 @@ class TestHandDetectorOutputFormat(unittest.TestCase):
 
 
 class TestCameraFailureHandling(unittest.TestCase):
-    """Test 5: Missing or failing camera handled gracefully."""
+    """Test 4: Missing or failing camera handled gracefully."""
 
     def test_invalid_camera_fallback(self):
         """Verify GestureController and Pacman handle camera failure without crashing."""
@@ -201,8 +210,51 @@ class TestCameraFailureHandling(unittest.TestCase):
         game.cleanup()
 
 
+class TestTensorRTModelLoading(unittest.TestCase):
+    """Test 5: TensorRT model loading handles missing or incompatible engine files with clear errors."""
+
+    def test_missing_tensorrt_engine_file(self):
+        """Verify missing engine file raises FileNotFoundError explaining target-specific compilation."""
+        from vision.hand_detector import TensorRTHandDetector
+
+        with self.assertRaises(FileNotFoundError) as ctx:
+            TensorRTHandDetector(engine_path="nonexistent_model.engine")
+
+        msg = str(ctx.exception)
+        self.assertIn("TensorRT engine file not found", msg)
+        self.assertIn("trtexec", msg)
+
+    def test_incompatible_tensorrt_engine_file(self):
+        """Verify corrupt/incompatible engine file produces clear architecture mismatch error."""
+        import tempfile
+        from vision.hand_detector import TensorRTHandDetector
+        import vision.hand_detector as hd
+
+        with tempfile.NamedTemporaryFile(suffix=".engine", delete=False) as tmp:
+            tmp.write(b"CORRUPTED_OR_INCOMPATIBLE_SERIALIZED_ENGINE_DATA")
+            tmp_path = tmp.name
+
+        try:
+            # Simulate TensorRT installed but engine failing deserialization
+            mock_trt = MagicMock()
+            mock_runtime = MagicMock()
+            mock_runtime.deserialize_cuda_engine.return_value = None
+            mock_trt.Runtime.return_value = mock_runtime
+
+            with patch.object(hd, 'TRT_AVAILABLE', True), patch.object(hd, 'trt', mock_trt):
+                with self.assertRaises(RuntimeError) as ctx:
+                    TensorRTHandDetector(engine_path=tmp_path)
+
+                msg = str(ctx.exception)
+                self.assertIn("Failed to deserialize TensorRT engine", msg)
+                self.assertIn("trtexec", msg)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+
 class TestResourceCleanup(unittest.TestCase):
-    """Test 6: Resource cleanup verification (camera.release(), detector.close())."""
+    """Test 7: Resource cleanup verification (camera.release(), detector.close())."""
 
     def test_proper_shutdown(self):
         """Verify stop() releases camera and detector resources properly."""
@@ -223,6 +275,45 @@ class TestResourceCleanup(unittest.TestCase):
         mock_detector.close.assert_called_once()
         self.assertIsNone(controller.camera)
         self.assertIsNone(controller.detector)
+
+
+class TestGameplayIntegrity(unittest.TestCase):
+    """Test 8: Existing gameplay mechanics remain completely unchanged."""
+
+    def test_game_engine_entities_and_board(self):
+        """Verify player, 4 ghosts, maze board, and score initialization."""
+        import pygame
+        pygame.init()
+        from pacman import Game
+
+        game = Game(initial_mode="keyboard")
+        engine = game.game_engine
+
+        # Verify board structure
+        self.assertIsNotNone(engine.board_definition)
+        self.assertEqual(len(engine.ghosts), 4, "Must have exactly 4 ghosts (Blinky, Pinky, Inky, Clyde)")
+
+        # Verify ghost types
+        ghost_names = [type(g).__name__ for g in engine.ghosts]
+        self.assertIn('Blinky', ghost_names)
+        self.assertIn('Pinky', ghost_names)
+        self.assertIn('Inky', ghost_names)
+        self.assertIn('Clyde', ghost_names)
+
+        # Verify initial player lives, game_over, and pause flags
+        self.assertEqual(engine.player.lives, 3)
+        self.assertFalse(engine.game_over)
+        self.assertFalse(engine.pause)
+
+        # Verify player initial location
+        self.assertGreater(engine.player.location_x, 0)
+        self.assertGreater(engine.player.location_y, 0)
+
+        # Verify movement logic executes without error
+        engine.set_direction(Direction.RIGHT)
+        engine.tick()
+
+        game.cleanup()
 
 
 if __name__ == '__main__':

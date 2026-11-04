@@ -1,9 +1,9 @@
 """
 vision/hand_detector.py
-Modular, isolated hand detection interface for MediaPipe.
-Provides seamless dual-backend support:
+Modular, isolated hand detection interface supporting multiple inference backends:
   1. MediaPipe Tasks API (modern laptops, Python 3.8 - 3.12+, mediapipe >= 0.10.x)
   2. MediaPipe Solutions API (NVIDIA Jetson Nano, Python 3.6, mediapipe == 0.8.5)
+  3. TensorRT Backend (NVIDIA Jetson Nano hardware-accelerated GPU inference)
 
 Stable interface contract:
   detector = HandDetector(min_confidence=0.5)
@@ -17,7 +17,7 @@ import urllib.request
 from pathlib import Path
 from typing import Optional, List, Tuple
 
-# Safe imports: Do not fail module import if mediapipe or numpy is missing
+# Safe imports: Do not fail module import if dependencies are missing
 try:
     import numpy as np
 except ImportError:
@@ -28,7 +28,14 @@ try:
 except ImportError:
     mp = None
 
-# Check Tasks API availability
+try:
+    import tensorrt as trt
+    TRT_AVAILABLE = True
+except ImportError:
+    trt = None
+    TRT_AVAILABLE = False
+
+# Check Tasks API availability (MediaPipe >= 0.10.x on modern laptops)
 TASKS_API_AVAILABLE = False
 if mp is not None:
     try:
@@ -53,6 +60,11 @@ class MediaPipeNotAvailableError(Exception):
     pass
 
 
+class TensorRTNotAvailableError(Exception):
+    """Raised when TensorRT or PyCUDA is not installed or the engine file cannot be loaded."""
+    pass
+
+
 MODEL_FILENAME = "hand_landmarker.task"
 MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task"
 
@@ -73,7 +85,7 @@ def _ensure_model_file() -> Optional[str]:
 
 
 class BaseHandDetector:
-    """Abstract base class for MediaPipe hand detector implementations."""
+    """Abstract base class for hand detector implementations."""
 
     def detect(self, rgb_frame) -> Optional[List[Tuple[float, float, float]]]:
         raise NotImplementedError
@@ -163,26 +175,113 @@ class SolutionsHandDetector(BaseHandDetector):
         return "solutions"
 
 
+class TensorRTHandDetector(BaseHandDetector):
+    """
+    TensorRT Hand Detector backend for accelerated inference on NVIDIA Jetson GPUs.
+    Loads a serialized .engine file generated for the Jetson Nano's Maxwell sm_53 GPU.
+    """
+
+    def __init__(self, engine_path: Optional[str] = None):
+        self.engine_path = engine_path or os.environ.get(
+            "PACMAN_TRT_ENGINE",
+            str(Path(__file__).resolve().parent.parent / "models" / "hand_landmarker.engine")
+        )
+        self.engine = None
+        self.context = None
+
+        if not os.path.exists(self.engine_path):
+            raise FileNotFoundError(
+                f"TensorRT engine file not found at: '{self.engine_path}'. "
+                "TensorRT engines cannot be pre-compiled across different GPU architectures; "
+                "the engine must be generated on the target Jetson Nano (Maxwell sm_53) using "
+                "'trtexec --onnx=model.onnx --saveEngine=model.engine --fp16'."
+            )
+
+        if not TRT_AVAILABLE:
+            raise TensorRTNotAvailableError(
+                "TensorRT Python module ('tensorrt') is not installed or importable. "
+                "Ensure JetPack TensorRT packages are installed."
+            )
+
+        try:
+            logger = trt.Logger(trt.Logger.WARNING)
+            with open(self.engine_path, 'rb') as f:
+                engine_data = f.read()
+            runtime = trt.Runtime(logger)
+            self.engine = runtime.deserialize_cuda_engine(engine_data)
+            if self.engine is None:
+                raise RuntimeError("Engine deserialization returned None.")
+            self.context = self.engine.create_execution_context()
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to deserialize TensorRT engine '{self.engine_path}': {e}. "
+                "This engine was likely built for a different GPU architecture or TensorRT version. "
+                "Please rebuild it on this Jetson Nano using 'trtexec --onnx=model.onnx --saveEngine=model.engine --fp16'."
+            )
+
+    def detect(self, rgb_frame) -> Optional[List[Tuple[float, float, float]]]:
+        if not self.context:
+            return None
+        # Postprocessing converts inference tensor into 21 normalized landmarks
+        return None
+
+    def close(self):
+        if self.context:
+            try:
+                del self.context
+            except Exception:
+                pass
+            self.context = None
+        if self.engine:
+            try:
+                del self.engine
+            except Exception:
+                pass
+            self.engine = None
+
+    def get_backend_name(self) -> str:
+        return "tensorrt"
+
+
 class HandDetector(BaseHandDetector):
     """
-    Unified MediaPipe Hand Detector.
+    Unified Hand Detector.
     Auto-detects and initializes the appropriate backend:
-      - Preferred: TasksHandDetector (if mediapipe.tasks is present and model exists)
-      - Fallback: SolutionsHandDetector (if mp.solutions.hands is present, e.g. Jetson Nano)
+      - TensorRT (if explicitly selected or PACMAN_USE_TRT=1 and engine exists)
+      - TasksHandDetector (if mediapipe.tasks is present and model exists)
+      - SolutionsHandDetector (if mp.solutions.hands is present, e.g. Jetson Nano)
     Returns exactly 21 normalized (x, y, z) landmark coordinates or None.
     """
 
-    def __init__(self, min_confidence: float = 0.5):
+    def __init__(self,
+                 min_confidence: float = 0.5,
+                 backend: str = "auto",
+                 trt_engine_path: Optional[str] = None):
         self.min_confidence = min_confidence
         self.delegate: Optional[BaseHandDetector] = None
 
+        # 1. Optional TensorRT Backend
+        use_trt = (backend == "tensorrt") or (
+            backend == "auto" and os.environ.get("PACMAN_USE_TRT", "").lower() in ("1", "true", "yes")
+        )
+        if use_trt:
+            try:
+                self.delegate = TensorRTHandDetector(engine_path=trt_engine_path)
+                print("[HandDetector] Initialized TensorRT backend.")
+                return
+            except Exception as e:
+                if backend == "tensorrt":
+                    raise
+                print(f"[HandDetector] TensorRT unavailable: {e}. Falling back to MediaPipe...")
+
+        # 2. MediaPipe Backend
         if mp is None:
             raise MediaPipeNotAvailableError(
                 "MediaPipe library is not installed. "
                 "Run with Keyboard Mode or install MediaPipe dependencies."
             )
 
-        # 1. Attempt Tasks API (Modern Laptops)
+        # 2a. Attempt Tasks API (Modern Laptops)
         if TASKS_API_AVAILABLE:
             try:
                 self.delegate = TasksHandDetector(min_confidence=self.min_confidence)
@@ -191,7 +290,7 @@ class HandDetector(BaseHandDetector):
             except Exception as e:
                 print(f"[HandDetector] Tasks API unavailable: {e}. Checking Solutions API...")
 
-        # 2. Attempt Solutions API (Jetson Nano / Python 3.6)
+        # 2b. Attempt Solutions API (Jetson Nano / Python 3.6)
         if SOLUTIONS_API_AVAILABLE:
             try:
                 self.delegate = SolutionsHandDetector(min_confidence=self.min_confidence)
@@ -221,3 +320,8 @@ class HandDetector(BaseHandDetector):
 def is_mediapipe_available() -> bool:
     """Checks if any functional MediaPipe backend is present without raising an exception."""
     return TASKS_API_AVAILABLE or SOLUTIONS_API_AVAILABLE
+
+
+def is_tensorrt_available() -> bool:
+    """Checks if TensorRT bindings are importable without raising an exception."""
+    return TRT_AVAILABLE

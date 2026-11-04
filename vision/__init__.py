@@ -12,7 +12,10 @@ from vision.gesture_recognizer import (
 from vision.hand_detector import (
     HandDetector,
     MediaPipeNotAvailableError,
-    is_mediapipe_available
+    TensorRTHandDetector,
+    TensorRTNotAvailableError,
+    is_mediapipe_available,
+    is_tensorrt_available
 )
 
 from vision.camera import (
@@ -31,7 +34,10 @@ __all__ = [
     'HAND_CONNECTIONS',
     'HandDetector',
     'MediaPipeNotAvailableError',
+    'TensorRTHandDetector',
+    'TensorRTNotAvailableError',
     'is_mediapipe_available',
+    'is_tensorrt_available',
     'Camera',
     'is_cv2_available',
     'build_csi_gstreamer_pipeline',

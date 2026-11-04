@@ -193,3 +193,4 @@ class Camera:
                 pass
             self.cap = None
         print("[Camera] VideoCapture released.")
+
