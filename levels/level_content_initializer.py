@@ -93,50 +93,50 @@ class LevelContentInitializer:
         eaten_folder = Path('assets/ghost_images/eaten')
 
         blinky_assets = Asset(
-            left=[pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('left1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('left2.png')), SPRITE_SIZE)],
-            right=[pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('right1.png')), SPRITE_SIZE),
-                   pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('right2.png')), SPRITE_SIZE)],
-            up=[pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('up1.png')), SPRITE_SIZE),
-                pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('up2.png')), SPRITE_SIZE)],
-            down=[pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('down1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(blinky_folder.joinpath('down2.png')), SPRITE_SIZE)])
+            left=[pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('left1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('left2.png'))), SPRITE_SIZE)],
+            right=[pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('right1.png'))), SPRITE_SIZE),
+                   pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('right2.png'))), SPRITE_SIZE)],
+            up=[pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('up1.png'))), SPRITE_SIZE),
+                pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('up2.png'))), SPRITE_SIZE)],
+            down=[pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('down1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(blinky_folder.joinpath('down2.png'))), SPRITE_SIZE)])
 
         pinky_assets = Asset(
-            left=[pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('left1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('left2.png')), SPRITE_SIZE)],
-            right=[pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('right1.png')), SPRITE_SIZE),
-                   pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('right2.png')), SPRITE_SIZE)],
-            up=[pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('up1.png')), SPRITE_SIZE),
-                pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('up2.png')), SPRITE_SIZE)],
-            down=[pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('down1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(pinky_folder.joinpath('down2.png')), SPRITE_SIZE)])
+            left=[pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('left1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('left2.png'))), SPRITE_SIZE)],
+            right=[pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('right1.png'))), SPRITE_SIZE),
+                   pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('right2.png'))), SPRITE_SIZE)],
+            up=[pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('up1.png'))), SPRITE_SIZE),
+                pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('up2.png'))), SPRITE_SIZE)],
+            down=[pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('down1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(pinky_folder.joinpath('down2.png'))), SPRITE_SIZE)])
         inky_assets = Asset(
-            left=[pygame.transform.scale(pygame.image.load(inky_folder.joinpath('left1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(inky_folder.joinpath('left2.png')), SPRITE_SIZE)],
-            right=[pygame.transform.scale(pygame.image.load(inky_folder.joinpath('right1.png')), SPRITE_SIZE),
-                   pygame.transform.scale(pygame.image.load(inky_folder.joinpath('right2.png')), SPRITE_SIZE)],
-            up=[pygame.transform.scale(pygame.image.load(inky_folder.joinpath('up1.png')), SPRITE_SIZE),
-                pygame.transform.scale(pygame.image.load(inky_folder.joinpath('up2.png')), SPRITE_SIZE)],
-            down=[pygame.transform.scale(pygame.image.load(inky_folder.joinpath('down1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(inky_folder.joinpath('down2.png')), SPRITE_SIZE)])
+            left=[pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('left1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('left2.png'))), SPRITE_SIZE)],
+            right=[pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('right1.png'))), SPRITE_SIZE),
+                   pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('right2.png'))), SPRITE_SIZE)],
+            up=[pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('up1.png'))), SPRITE_SIZE),
+                pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('up2.png'))), SPRITE_SIZE)],
+            down=[pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('down1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(inky_folder.joinpath('down2.png'))), SPRITE_SIZE)])
         clyde_assets = Asset(
-            left=[pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('left1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('left2.png')), SPRITE_SIZE)],
-            right=[pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('right1.png')), SPRITE_SIZE),
-                   pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('right2.png')), SPRITE_SIZE)],
-            up=[pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('up1.png')), SPRITE_SIZE),
-                pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('up2.png')), SPRITE_SIZE)],
-            down=[pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('down1.png')), SPRITE_SIZE),
-                  pygame.transform.scale(pygame.image.load(clyde_folder.joinpath('down2.png')), SPRITE_SIZE)])
+            left=[pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('left1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('left2.png'))), SPRITE_SIZE)],
+            right=[pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('right1.png'))), SPRITE_SIZE),
+                   pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('right2.png'))), SPRITE_SIZE)],
+            up=[pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('up1.png'))), SPRITE_SIZE),
+                pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('up2.png'))), SPRITE_SIZE)],
+            down=[pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('down1.png'))), SPRITE_SIZE),
+                  pygame.transform.scale(pygame.image.load(str(clyde_folder.joinpath('down2.png'))), SPRITE_SIZE)])
 
         frightened_assets = [pygame.transform.scale(pygame.image.load('assets/ghost_images/scared_1.png'), SPRITE_SIZE),
                              pygame.transform.scale(pygame.image.load('assets/ghost_images/scared_2.png'), SPRITE_SIZE)]
 
-        eaten_assets = Asset(left=[pygame.transform.scale(pygame.image.load(eaten_folder.joinpath('eyes_left.png')), SPRITE_SIZE)],
-                             right=[pygame.transform.scale(pygame.image.load(eaten_folder.joinpath('eyes_right.png')), SPRITE_SIZE)],
-                             down=[pygame.transform.scale(pygame.image.load(eaten_folder.joinpath('eyes_down.png')), SPRITE_SIZE)],
-                             up=[pygame.transform.scale(pygame.image.load(eaten_folder.joinpath('eyes_up.png')), SPRITE_SIZE)])
+        eaten_assets = Asset(left=[pygame.transform.scale(pygame.image.load(str(eaten_folder.joinpath('eyes_left.png'))), SPRITE_SIZE)],
+                             right=[pygame.transform.scale(pygame.image.load(str(eaten_folder.joinpath('eyes_right.png'))), SPRITE_SIZE)],
+                             down=[pygame.transform.scale(pygame.image.load(str(eaten_folder.joinpath('eyes_down.png'))), SPRITE_SIZE)],
+                             up=[pygame.transform.scale(pygame.image.load(str(eaten_folder.joinpath('eyes_up.png'))), SPRITE_SIZE)])
 
         blink_assets = [pygame.transform.scale(pygame.image.load('assets/ghost_images/scared_1.png'), SPRITE_SIZE),
                         pygame.transform.scale(pygame.image.load('assets/ghost_images/scared_3.png'), SPRITE_SIZE)]

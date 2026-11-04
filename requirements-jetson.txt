@@ -1,0 +1,19 @@
+# PAC-MAN VISION - NVIDIA Jetson Nano Requirements
+# Platform: NVIDIA Jetson Nano 4GB + Tanna TechBiz EAGLE-101 Carrier Board
+# OS: JetPack 4.6.x (Ubuntu 18.04 LTS aarch64, Python 3.6.9)
+#
+# IMPORTANT JETSON INSTALLATION NOTES:
+# 1. DO NOT install opencv via pip! Use system OpenCV with GStreamer and CUDA support:
+#      sudo apt-get install python3-opencv
+#
+# 2. Pygame can be installed via system apt or pip (pinned to Python 3.6 compatible release):
+#      sudo apt-get install python3-pygame  # OR: pip3 install pygame==2.0.3
+#
+# 3. MediaPipe for Python 3.6 aarch64:
+#    Official PyPI does not host aarch64 wheels for Python 3.6.
+#    Install MediaPipe 0.8.5 for aarch64 Python 3.6 from precompiled release or build via Bazel:
+#      pip3 install mediapipe-0.8.5-cp36-cp36m-linux_aarch64.whl
+#    See docs/JETSON_SETUP.md for complete step-by-step instructions.
+
+numpy==1.19.5
+pygame==2.0.3

@@ -2,12 +2,13 @@
 pacman.py
 Main application entry point for Pac-Man with real-time hand gesture controls.
 Supports both Keyboard Mode and Gesture Mode (OpenCV + MediaPipe webcam tracking).
+Compatible with Python 3.6+ on NVIDIA Jetson Nano and modern laptops.
 """
 
 import os
 import sys
 import time
-from typing import Optional
+from typing import Optional, Union
 
 # Center Pygame display window on desktop
 os.environ['SDL_VIDEO_CENTERED'] = '1'
@@ -24,13 +25,27 @@ from gesture_controller import GestureController, GestureType
 class Game:
     """Coordinates Pac-Man game mechanics, display rendering, and multi-mode inputs."""
 
-    def __init__(self):
+    def __init__(self,
+                 camera_source: Union[int, str] = 0,
+                 show_preview: bool = True,
+                 camera_width: int = 640,
+                 camera_height: int = 480,
+                 initial_mode: Optional[str] = None):
         pygame.init()
         pygame.display.set_caption("Pac-Man (Gesture & Keyboard Controls)")
         self.screen = pygame.display.set_mode(RESOLUTION)
         self.timer = pygame.time.Clock()
         self.game_engine = self.init()
         self.game_start_sfx = pygame.mixer.Sound('media/game_start.wav')
+
+        # Camera configuration
+        try:
+            self.camera_source: Union[int, str] = int(camera_source)
+        except (ValueError, TypeError):
+            self.camera_source = camera_source
+        self.show_preview = show_preview
+        self.camera_width = camera_width
+        self.camera_height = camera_height
 
         # Control Modes: "KEYBOARD" or "GESTURE"
         self.control_mode = "KEYBOARD"
@@ -46,6 +61,10 @@ class Game:
         self.title_font = pygame.font.SysFont(ARCADE_FONT, 38, bold=True)
         self.menu_font = pygame.font.SysFont(ARCADE_FONT, 21, bold=True)
         self.sub_font = pygame.font.SysFont(ARCADE_FONT, 15)
+
+        if initial_mode:
+            self.showing_mode_select = False
+            self.set_control_mode(initial_mode.upper())
 
     def init(self):
         """Initializes a fresh level, maze board, and game engine."""
@@ -73,7 +92,12 @@ class Game:
                 return True
 
             print("[Pac-Man] Starting Gesture Controller...")
-            self.gesture_controller = GestureController(show_preview=True)
+            self.gesture_controller = GestureController(
+                camera_source=self.camera_source,
+                show_preview=self.show_preview,
+                width=self.camera_width,
+                height=self.camera_height
+            )
             if self.gesture_controller.start():
                 self.control_mode = "GESTURE"
                 self.set_notification("GESTURE MODE ACTIVE [Webcam Ready]")
@@ -313,6 +337,30 @@ class Game:
             self.cleanup()
 
 
+def parse_arguments():
+    """Parses optional CLI arguments for control mode and camera configuration."""
+    import argparse
+    parser = argparse.ArgumentParser(description="PAC-MAN VISION: Gesture & Keyboard Controlled Pac-Man")
+    parser.add_argument("--mode", choices=["keyboard", "gesture"], default=None,
+                        help="Launch directly in keyboard or gesture mode, skipping mode selection menu.")
+    parser.add_argument("--camera", default=0,
+                        help="Camera source: integer index (e.g. 0), or 'csi' / 'csi://0' for Jetson CSI camera.")
+    parser.add_argument("--no-preview", action="store_true",
+                        help="Disable OpenCV preview window to conserve CPU/GPU resources on Jetson Nano.")
+    parser.add_argument("--width", type=int, default=640,
+                        help="Camera capture width (default: 640).")
+    parser.add_argument("--height", type=int, default=480,
+                        help="Camera capture height (default: 480).")
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    game = Game()
+    args = parse_arguments()
+    game = Game(
+        camera_source=args.camera,
+        show_preview=not args.no_preview,
+        camera_width=args.width,
+        camera_height=args.height,
+        initial_mode=args.mode
+    )
     game.run()

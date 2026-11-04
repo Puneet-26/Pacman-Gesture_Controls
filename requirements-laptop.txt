@@ -1,0 +1,7 @@
+# PAC-MAN VISION - Modern Laptop / Development Environment Requirements
+# Compatible with Python 3.8 - 3.12+ (Windows, macOS, Linux x86_64)
+
+pygame>=2.5.0
+numpy>=1.24.0
+opencv-python>=4.8.0
+mediapipe>=0.10.0
